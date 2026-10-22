@@ -13,16 +13,8 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          load: true
-          push: false
-          tags: app:fixed
+      - name: Build Docker image
+        run: docker build --pull -t app:fixed .
 
       - name: Run container and smoke test
         shell: bash
@@ -35,7 +27,6 @@ jobs:
           }
           trap cleanup EXIT
 
-          # Wait for the server before checking the content.
           ready=false
           for i in $(seq 1 20); do
             if curl --fail --silent http://localhost:8080/ > /tmp/home.html; then
@@ -44,7 +35,6 @@ jobs:
             fi
             sleep 1
           done
-
           if [ "$ready" != true ]; then
             echo "Home page did not become ready"
             exit 1
