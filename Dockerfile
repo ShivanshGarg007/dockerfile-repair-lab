@@ -1,16 +1,21 @@
-FROM node:notfound
+# Use a supported, lightweight Node.js LTS image.
+FROM node:22-alpine
 
-# Copy files first, then change directory
-COPY . .
-WORKDIR /wrong
+# Set the app root before copying files so all paths are predictable.
+WORKDIR /app
 
-# Broken dependency installation
-RUN npm install package-lock.json
+# Install dependencies in a separate layer; Docker can reuse this layer
+# whenever only application source files change.
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
 
-# Copying a folder that doesn't exist in the project
-COPY missing-folder ./missing-folder
+# Copy only files needed at runtime. Keep src because app.js imports it.
+COPY app.js ./
+COPY src ./src
+COPY public ./public
 
+ENV NODE_ENV=production
 EXPOSE 8080
 
-# Incorrect startup command
-CMD ["npm", "run", "production"]
+# Use the package's declared start script.
+CMD ["npm", "start"]
